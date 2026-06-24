@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log in · Elite Minus</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%23facc15'/><rect x='5.5' y='10' width='13' height='4' rx='2' fill='%230a0a0a'/></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: {
+      brand: { DEFAULT: '#facc15', dark: '#eab308', light: '#fde047' },
+      base: { 900: '#000000', 800: '#121212', 700: '#181818', 600: '#242424' }
+    }}}}
+  </script>
+</head>
+<body class="bg-gradient-to-b from-[#1f1f1f] to-black min-h-screen flex items-center justify-center p-4 font-sans text-white">
+  <div class="w-full max-w-md bg-base-800 rounded-xl shadow-2xl p-8 sm:p-10">
+    <div class="flex items-center justify-center gap-2 mb-8">
+      <svg class="w-10 h-10 text-brand" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="currentColor"/><rect x="6.3" y="10.2" width="11.4" height="3.6" rx="1.8" fill="#0a0a0a"/></svg>
+      <span class="text-2xl font-bold tracking-tight">Elite<span class="text-brand">Minus-</span></span>
+    </div>
+
+    <h1 class="text-2xl sm:text-3xl font-bold text-center mb-8">Log in to continue</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+        <div class="mb-4 rounded-md px-4 py-3 text-sm {{ 'bg-red-500/15 text-red-300 border border-red-500/30' if category=='error' else 'bg-brand/15 text-green-300 border border-brand/30' }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold mb-1">Email or username</label>
+        <input name="identifier" type="text" required autofocus
+               class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+               placeholder="demo">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">Password</label>
+        <input name="password" type="password" required
+               class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+               placeholder="••••••••">
+      </div>
+      <label class="flex items-center gap-2 text-sm text-neutral-300 select-none">
+        <input type="checkbox" name="remember" class="accent-brand w-4 h-4"> Remember me
+      </label>
+      <button type="submit"
+              class="w-full bg-brand hover:bg-brand-dark hover:scale-[1.02] transition rounded-full py-3 font-bold text-black">
+        Log In
+      </button>
+    </form>
+
+    <div class="mt-6 rounded-md bg-base-700 px-4 py-3 text-sm text-neutral-300 text-center">
+      Try the demo account → <span class="font-semibold text-white">demo</span> / <span class="font-semibold text-white">demo12345</span>
+    </div>
+
+    <p class="mt-8 text-center text-neutral-400 border-t border-neutral-700 pt-6">
+      Don't have an account?
+      <a href="{{ url_for('auth.register') }}" class="text-white underline hover:text-brand font-semibold">Sign up</a>
+    </p>
+  </div>
+</body>
+</html>

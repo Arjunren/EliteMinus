@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "spotify-clone",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-c", "import app; app.app.run(host='127.0.0.1', port=5000, use_reloader=False)"],
+      "port": 5000
+    }
+  ]
+}
