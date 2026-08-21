@@ -1,0 +1,36 @@
+{% extends "_auth_base.html" %}
+{% block title %}Log in · Elite Minus{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl sm:text-3xl font-bold text-center mb-8">Log in to continue</h1>
+
+<form method="POST" class="space-y-4">
+  <div>
+    <label class="block text-sm font-semibold mb-1">E-mail or username</label>
+    <input name="identifier" type="text" required autofocus autocomplete="username"
+           class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+           placeholder="you@example.com">
+  </div>
+  <div>
+    <label class="block text-sm font-semibold mb-1">Password</label>
+    <input name="password" type="password" required autocomplete="current-password"
+           class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+           placeholder="••••••••">
+  </div>
+  <div class="flex items-center justify-between text-sm">
+    <label class="flex items-center gap-2 text-neutral-300 select-none">
+      <input type="checkbox" name="remember" class="accent-brand w-4 h-4"> Remember me
+    </label>
+    <a href="{{ url_for('auth.forgot') }}" class="text-neutral-400 hover:text-brand underline">Forgot password?</a>
+  </div>
+  <button type="submit"
+          class="w-full bg-brand hover:bg-brand-dark hover:scale-[1.02] transition rounded-full py-3 font-bold text-black">
+    Log In
+  </button>
+</form>
+
+<p class="mt-8 text-center text-neutral-400 border-t border-neutral-700 pt-6">
+  Don't have an account?
+  <a href="{{ url_for('auth.register') }}" class="text-white underline hover:text-brand font-semibold">Sign up</a>
+</p>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "_auth_base.html" %}
+{% block title %}Sign up · Elite Minus{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl sm:text-3xl font-bold text-center mb-2">Create your account</h1>
+<p class="text-center text-sm text-neutral-400 mb-8">
+  We'll e-mail you a code to confirm the address.
+</p>
+
+<form method="POST" class="space-y-4">
+  <div>
+    <label class="block text-sm font-semibold mb-1">Username</label>
+    <input name="username" type="text" required value="{{ username or '' }}"
+           autocomplete="username" minlength="3" maxlength="50"
+           pattern="[A-Za-z0-9._-]+"
+           title="Letters, numbers, dot, underscore and hyphen only"
+           class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+           placeholder="yourname">
+  </div>
+  <div>
+    <label class="block text-sm font-semibold mb-1">E-mail</label>
+    <input name="email" type="email" required value="{{ email or '' }}"
+           autocomplete="email"
+           class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+           placeholder="you@example.com">
+  </div>
+  <div>
+    <label class="block text-sm font-semibold mb-1">Password</label>
+    <input name="password" type="password" required minlength="8"
+           autocomplete="new-password"
+           class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+           placeholder="At least 8 characters, letters and numbers">
+  </div>
+  <div>
+    <label class="block text-sm font-semibold mb-1">Confirm password</label>
+    <input name="confirm" type="password" required minlength="8"
+           autocomplete="new-password"
+           class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+           placeholder="••••••••">
+  </div>
+  <button type="submit"
+          class="w-full bg-brand hover:bg-brand-dark hover:scale-[1.02] transition rounded-full py-3 font-bold text-black">
+    Send verification code
+  </button>
+</form>
+
+<p class="mt-8 text-center text-neutral-400 border-t border-neutral-700 pt-6">
+  Already have an account?
+  <a href="{{ url_for('auth.login') }}" class="text-white underline hover:text-brand font-semibold">Log in</a>
+</p>
+{% endblock %}

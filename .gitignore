@@ -14,3 +14,7 @@ env/
 Thumbs.db
 .idea/
 .vscode/
+
+# Local-only project material
+DEPLOYMENT.md
+.claude/

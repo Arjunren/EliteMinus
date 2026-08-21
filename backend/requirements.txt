@@ -1,0 +1,12 @@
+Flask>=3.0
+Flask-SQLAlchemy>=3.1
+Flask-Login>=0.6
+Flask-Bcrypt>=1.0
+Flask-Cors>=4.0
+PyMySQL>=1.1
+python-dotenv>=1.0
+itsdangerous>=2.1
+requests>=2.31
+# Needed when MySQL uses caching_sha2_password (MySQL 8+). PythonAnywhere and
+# XAMPP/MariaDB do not require it, but installing it is harmless.
+cryptography>=42

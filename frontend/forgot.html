@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgot password · Elite Minus</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%23facc15'/><rect x='5.5' y='10' width='13' height='4' rx='2' fill='%230a0a0a'/></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: {
+      brand: { DEFAULT: '#facc15', dark: '#eab308', light: '#fde047' },
+      base: { 900: '#000000', 800: '#121212', 700: '#181818', 600: '#242424' }
+    }}}}
+  </script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gradient-to-b from-[#1f1f1f] to-black min-h-screen flex items-center justify-center p-4 font-sans text-white">
+  <div class="w-full max-w-md bg-base-800 rounded-xl shadow-2xl p-8 sm:p-10">
+    <div class="flex items-center justify-center gap-2 mb-8">
+      <svg class="w-10 h-10 text-brand" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="currentColor"/><rect x="6.3" y="10.2" width="11.4" height="3.6" rx="1.8" fill="#0a0a0a"/></svg>
+      <span class="text-2xl font-bold tracking-tight">Elite<span class="text-brand">Minus-</span></span>
+    </div>
+
+    <h1 class="text-2xl sm:text-3xl font-bold text-center mb-2">Forgot your password?</h1>
+    <p class="text-center text-sm text-neutral-400 mb-6">
+      EliteMinus doesn't reset passwords automatically. The developer does it by
+      hand, so nobody can take over an account through e-mail alone.
+    </p>
+
+    <div id="dev-contact" class="rounded-lg bg-base-700 p-4 mb-6 text-sm space-y-1">
+      <p class="font-semibold text-white">Contact the developer</p>
+      <p class="text-neutral-400">Loading contact details…</p>
+    </div>
+
+    <div id="banner" class="hidden"></div>
+
+    <form id="forgot-form" class="space-y-4">
+      <p class="text-sm text-neutral-400">
+        Or send the request from here and we'll pass it along:
+      </p>
+      <div>
+        <label class="block text-sm font-semibold mb-1">Your account e-mail</label>
+        <input name="email" type="email" required
+               class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+               placeholder="you@example.com">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">Message
+          <span class="text-neutral-500 font-normal">(optional)</span></label>
+        <textarea name="message" rows="3" maxlength="1000"
+                  class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+                  placeholder="Anything that helps confirm it's really you."></textarea>
+      </div>
+      <button type="submit"
+              class="w-full bg-brand hover:bg-brand-dark hover:scale-[1.02] transition rounded-full py-3 font-bold text-black">
+        Send request to developer
+      </button>
+    </form>
+
+    <p class="mt-8 text-center text-neutral-400 border-t border-neutral-700 pt-6">
+      <a href="login.html" class="text-white underline hover:text-brand font-semibold">Back to log in</a>
+    </p>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

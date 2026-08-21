@@ -1,11 +1,8 @@
-# 🟡 EliteMinus- — a Spotify-style web app
+# 🟡 EliteMinus — music app + staff management
 
-A full-featured music-streaming web app built with **Python (Flask)**, **vanilla
-JavaScript**, **HTML**, **Tailwind CSS**, and a **MySQL** database running on
-**XAMPP**.
-
-It's a single-page app: the player bar lives in one persistent shell, so music
-keeps playing while you move between pages — just like Spotify.
+EliteMinus is a Spotify-style listener application with a Flask staff-management
+backend. It uses Python/MySQL on PythonAnywhere for the API and admin panel,
+and a static Vanilla JavaScript client on Vercel for listeners.
 
 ![stack](https://img.shields.io/badge/Flask-3.x-black) ![db](https://img.shields.io/badge/MySQL-XAMPP-orange) ![css](https://img.shields.io/badge/Tailwind-CDN-38bdf8)
 
@@ -15,7 +12,7 @@ keeps playing while you move between pages — just like Spotify.
 
 | Area | What you get |
 |------|--------------|
-| **Accounts** | Register, log in, log out. Passwords hashed with bcrypt, sessions via Flask-Login. |
+| **Accounts** | Sign up with username, e-mail, password confirmation, and SMTP OTP verification. Passwords are bcrypt hashed. |
 | **Home** | Greeting, recently played, trending, featured playlists, popular albums & artists. |
 | **Search** | Live search across songs, artists, albums and playlists, plus a "Browse all" genre grid. |
 | **Player** | Play/pause, next/previous, seek bar, volume + mute, **shuffle**, **repeat (off/all/one)**, spacebar shortcut. Playback survives navigation and page reloads. |
@@ -24,32 +21,58 @@ keeps playing while you move between pages — just like Spotify.
 | **Albums** | Album pages with full track lists. |
 | **Artists** | Artist pages with top songs, albums, bio, and **follow/unfollow**. |
 | **Library** | All your playlists, followed artists and liked songs in one place. |
-| **Queue** | A live queue view; "Add to queue" from any song's ⋯ menu. |
+| **Queue** | A persistent, server-backed queue with add-next, remove, clear, and reorder. |
 | **History** | Plays are recorded and power "Recently played". |
 | **Cover art** | Generated on the fly by Flask as gradient SVGs — no image files needed, works offline. |
-| **Admin panel** | A separate `/admin` dashboard (admins only): monitoring stats, and add/edit/delete for songs, artists, albums and user accounts. |
+| **Staff management** | `/admin` provides staff roles, departments, status/approval, invites, password resets, auditing, CSV export, and catalog controls. |
+| **Spotify** | Spotify catalog search/import and OAuth account linking. Premium listeners can use Spotify browser playback. |
 
 > Audio uses royalty-free demo tracks from soundhelix.com, so playback needs an
 > internet connection. Everything else works locally.
 
 ---
 
-## 🚀 Quick start (Windows + XAMPP)
+## Project layout
+
+```text
+EliteMinus/
+├── backend/                 # Deploy this folder to PythonAnywhere
+│   ├── app.py               # Flask API and server-rendered staff admin
+│   ├── wsgi.py              # PythonAnywhere entry point
+│   ├── models.py            # MySQL models (users, OTPs, queue, playlists, …)
+│   ├── services/            # SMTP, OTP, token, audit, Spotify helpers
+│   ├── blueprints/          # Auth, API, admin, Spotify routes
+│   ├── templates/           # Admin + fallback auth pages
+│   ├── static/              # Admin assets
+│   ├── requirements.txt
+│   ├── .env.example
+│   ├── seed.py              # Fresh database setup
+│   └── migrate.py           # Existing database upgrade
+├── frontend/                # Deploy this folder to Vercel
+│   ├── index.html           # Listener application
+│   ├── login.html / register.html / verify.html / forgot.html
+│   ├── js/config.js         # Set PythonAnywhere API URL here
+│   └── vercel.json
+└── DEPLOYMENT.md            # Complete PythonAnywhere + Vercel setup guide
+```
+
+## 🚀 Local quick start
 
 ### 1. Start MySQL
 Open the **XAMPP Control Panel** and click **Start** next to **MySQL**.
 (Apache is *not* required — Flask serves the site itself.)
 
 ### 2. Install the Python packages
-From this project folder:
+From `backend/`:
 
 ```bash
+cd backend
 pip install -r requirements.txt
 ```
 
 ### 3. (Optional) configure the database connection
-Defaults already match a stock XAMPP install (`root`, no password,
-`127.0.0.1:3306`). To change anything, copy `.env.example` to `.env` and edit it.
+Defaults match a stock XAMPP install (`root`, no password, `127.0.0.1:3306`).
+To change anything, copy `backend/.env.example` to `backend/.env` and edit it.
 
 ### 4. Create the database and sample data
 This one command creates the `spotify_clone` database, all tables, and fills it
@@ -64,7 +87,27 @@ python seed.py
 python app.py
 ```
 
-Open **http://localhost:5000** and log in with the demo account:
+The backend admin panel is at **http://localhost:5000/admin**. For the listener
+UI, set `frontend/js/config.js` to `http://localhost:5000` and serve
+`frontend/` with a static server.
+
+Fresh sample data includes these development accounts:
+
+| Account | Username | Password | OTP required |
+| --- | --- | --- | --- |
+| Administrator | `admin` | `Admin@12345` | No |
+| Default test listener | `user` | `User@12345` | No — already verified |
+| Demo listener | `demo` | `Demo@12345` | No — already verified |
+
+Change or remove these accounts before production deployment.
+
+If you already seeded the database before this account was added, create it
+without deleting anything:
+
+```bash
+cd backend
+python create_default_user.py
+```
 
 ```
 username:  demo
@@ -75,85 +118,22 @@ password:  demo12345
 
 ---
 
-## 🛡️ Admin panel
+## Deploy
 
-Open **http://localhost:5000/admin** and log in with the admin account:
-
-```
-username:  admin
-password:  admin12345
-```
-
-From there you can:
-- **Dashboard** — totals, plays today/this week, top songs, recent activity, genre breakdown
-- **Songs / Artists / Albums** — add, edit and delete catalog entries
-- **Users** — create accounts, reset passwords, grant/revoke admin, delete users
-
-Admins also get an **"Admin panel"** link in their account menu inside the main app.
-
-> **Upgrading an existing database?** If you set up the project *before* the admin
-> feature, run this once to add the `is_admin` column and the admin account
-> without wiping your data:
->
-> ```bash
-> python make_admin.py
-> ```
-> (Fresh `python seed.py` runs already include the admin account.)
-
----
-
-## 🗄️ Using phpMyAdmin instead (optional)
-
-If you'd rather create the tables through phpMyAdmin:
-
-1. Open **http://localhost/phpmyadmin**
-2. **Import** → choose `schema.sql` → **Go** (creates the DB + tables)
-3. Back in the terminal, run `python seed.py` to load the sample data.
-
----
-
-## 📁 Project structure
-
-```
-Elite_Minus/
-├── app.py              # App factory + entry point
-├── config.py           # Settings (DB connection, secret key)
-├── extensions.py       # SQLAlchemy / Bcrypt / Login-Manager singletons
-├── models.py           # Database models (users, artists, albums, songs, …)
-├── seed.py             # Creates the DB + tables + sample data
-├── make_admin.py       # Non-destructive migration: adds admin to an existing DB
-├── schema.sql          # Plain-SQL schema for phpMyAdmin (optional)
-├── requirements.txt
-├── .env.example
-├── blueprints/
-│   ├── auth.py         # register / login / logout
-│   ├── main.py         # serves the single-page app shell
-│   ├── api.py          # JSON API (search, playlists, likes, follows, …)
-│   └── admin.py        # /admin page + /api/admin/* (dashboard + CRUD)
-├── templates/
-│   ├── app.html        # the SPA shell (sidebar + player + content)
-│   ├── admin.html      # the admin dashboard shell
-│   ├── login.html
-│   └── register.html
-└── static/
-    ├── css/styles.css  # scrollbars, sliders, animations
-    └── js/
-        ├── api.js          # fetch wrapper + helpers
-        ├── components.js   # HTML render functions
-        ├── player.js       # the audio engine
-        ├── app.js          # router + event wiring
-        └── admin.js        # admin dashboard controller
-```
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the exact folders, commands and settings
+for PythonAnywhere, PythonAnywhere MySQL, Vercel, SMTP OTP, CORS and Spotify.
 
 ---
 
 ## 🛠️ Tech notes
 
 - **Database:** MySQL/MariaDB via SQLAlchemy with the PyMySQL driver.
-- **Auth:** Flask-Login sessions; passwords hashed with Flask-Bcrypt.
+- **Auth:** Flask-Login admin sessions plus signed Bearer tokens for Vercel;
+  passwords are hashed with Flask-Bcrypt and registration requires an e-mail OTP.
 - **Frontend:** Tailwind via the Play CDN (no build step). For production you'd
   compile Tailwind with the CLI/PostCSS instead.
-- **API:** all dynamic data is served as JSON under `/api/*`.
+- **API:** all dynamic data is served as JSON under `/api/*`; frontend and
+  backend can be deployed separately.
 
 ## ⚠️ Troubleshooting
 

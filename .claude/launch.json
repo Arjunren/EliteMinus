@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "spotify-clone",
+      "name": "eliteminus-preview",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-c", "import app; app.app.run(host='127.0.0.1', port=5000, use_reloader=False)"],
+      "runtimeArgs": ["C:\\Users\\arjun\\AppData\\Local\\Temp\\claude\\C--Users-arjun-OneDrive-Documents-EliteMinus\\1a0a85e4-6607-4e98-bdbe-cc0bfdadbfba\\scratchpad\\devrun.py"],
       "port": 5000
     }
   ]

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Elite Minus{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%23facc15'/><rect x='5.5' y='10' width='13' height='4' rx='2' fill='%230a0a0a'/></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: {
+      brand: { DEFAULT: '#facc15', dark: '#eab308', light: '#fde047' },
+      base: { 900: '#000000', 800: '#121212', 700: '#181818', 600: '#242424' }
+    }}}}
+  </script>
+</head>
+<body class="bg-gradient-to-b from-[#1f1f1f] to-black min-h-screen flex items-center justify-center p-4 font-sans text-white">
+  <div class="w-full max-w-md bg-base-800 rounded-xl shadow-2xl p-8 sm:p-10">
+    <a href="{{ url_for('auth.login') }}" class="flex items-center justify-center gap-2 mb-8">
+      <svg class="w-10 h-10 text-brand" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="currentColor"/><rect x="6.3" y="10.2" width="11.4" height="3.6" rx="1.8" fill="#0a0a0a"/></svg>
+      <span class="text-2xl font-bold tracking-tight">Elite<span class="text-brand">Minus-</span></span>
+    </a>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+        <div class="mb-3 rounded-md px-4 py-2.5 text-sm {{ 'bg-red-500/15 text-red-300 border border-red-500/30' if category=='error' else 'bg-brand/15 text-brand border border-brand/30' }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

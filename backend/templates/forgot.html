@@ -1,0 +1,55 @@
+{% extends "_auth_base.html" %}
+{% block title %}Forgot password · Elite Minus{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl sm:text-3xl font-bold text-center mb-2">Forgot your password?</h1>
+<p class="text-center text-sm text-neutral-400 mb-6">
+  Passwords aren't reset automatically on EliteMinus — the developer does it by
+  hand so nobody can hijack an account through e-mail.
+</p>
+
+<div class="rounded-lg bg-base-700 p-4 mb-6 text-sm space-y-2">
+  <p class="font-semibold text-white">Contact the developer</p>
+  <p class="text-neutral-300">{{ developer.name }}</p>
+  {% if developer.email %}
+    <p><a href="mailto:{{ developer.email }}?subject=EliteMinus%20password%20reset"
+          class="text-brand hover:underline break-all">{{ developer.email }}</a></p>
+  {% endif %}
+  {% if developer.phone %}
+    <p class="text-neutral-300">{{ developer.phone }}</p>
+  {% endif %}
+</div>
+
+{% if sent %}
+  <p class="rounded-md bg-brand/15 border border-brand/30 text-brand px-4 py-3 text-sm mb-6">
+    Your request has been sent. The developer will reset your password and
+    e-mail you the new one.
+  </p>
+{% else %}
+  <p class="text-sm text-neutral-400 mb-3">
+    Or send the request from here and we'll pass it along:
+  </p>
+  <form method="POST" class="space-y-4">
+    <div>
+      <label class="block text-sm font-semibold mb-1">Your account e-mail</label>
+      <input name="email" type="email" required
+             class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+             placeholder="you@example.com">
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1">Message <span class="text-neutral-500 font-normal">(optional)</span></label>
+      <textarea name="message" rows="3" maxlength="1000"
+                class="w-full rounded bg-base-600 border border-neutral-700 px-4 py-3 focus:border-white focus:ring-2 focus:ring-white/20 outline-none"
+                placeholder="Anything that helps confirm it's really you."></textarea>
+    </div>
+    <button type="submit"
+            class="w-full bg-brand hover:bg-brand-dark hover:scale-[1.02] transition rounded-full py-3 font-bold text-black">
+      Send request to developer
+    </button>
+  </form>
+{% endif %}
+
+<p class="mt-8 text-center text-neutral-400 border-t border-neutral-700 pt-6">
+  <a href="{{ url_for('auth.login') }}" class="text-white underline hover:text-brand font-semibold">Back to log in</a>
+</p>
+{% endblock %}

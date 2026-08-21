@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elite Minus</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%23facc15'/><rect x='5.5' y='10' width='13' height='4' rx='2' fill='%230a0a0a'/></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: {
+        brand: { DEFAULT: '#facc15', dark: '#eab308', light: '#fde047' },
+        base: { 900: '#000000', 800: '#121212', 700: '#181818', 600: '#242424', 500: '#2a2a2a' },
+        spotify: '#1db954'
+      },
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+    }}}
+  </script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-black text-white font-sans overflow-hidden select-none">
+
+  <div class="h-screen flex flex-col">
+    <div class="flex-1 flex gap-2 p-2 overflow-hidden">
+
+      <!-- ============ SIDEBAR ============ -->
+      <aside class="hidden md:flex w-[260px] flex-col gap-2 shrink-0">
+        <nav class="bg-base-800 rounded-lg p-3">
+          <a href="#/home" class="flex items-center gap-3 mb-2 px-2">
+            <svg class="w-9 h-9 text-brand" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="currentColor"/><rect x="6.3" y="10.2" width="11.4" height="3.6" rx="1.8" fill="#0a0a0a"/></svg>
+            <span class="text-xl font-bold">Elite<span class="text-brand">Minus-</span></span>
+          </a>
+          <a href="#/home" data-nav="home" class="nav-link flex items-center gap-4 px-2 py-2 rounded font-bold text-neutral-300 hover:text-white">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.3l9 8.1-1.34 1.49L18 11.4V21h-4v-6h-4v6H6v-9.6l-1.66 1.49L3 11.4z"/></svg>
+            Home
+          </a>
+          <a href="#/search" data-nav="search" class="nav-link flex items-center gap-4 px-2 py-2 rounded font-bold text-neutral-300 hover:text-white">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M10.5 3a7.5 7.5 0 015.94 12.08l4.24 4.24-1.42 1.42-4.24-4.24A7.5 7.5 0 1110.5 3zm0 2a5.5 5.5 0 100 11 5.5 5.5 0 000-11z"/></svg>
+            Search
+          </a>
+          <a href="#/queue" data-nav="queue" class="nav-link flex items-center gap-4 px-2 py-2 rounded font-bold text-neutral-300 hover:text-white">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h13v2H3zM3 11h13v2H3zM3 16h9v2H3zM16 11l5 3-5 3z"/></svg>
+            Queue <span id="queue-count" class="ml-auto text-xs font-semibold text-neutral-500"></span>
+          </a>
+        </nav>
+
+        <div class="bg-base-800 rounded-lg flex-1 flex flex-col overflow-hidden">
+          <div class="flex items-center justify-between px-4 pt-4 pb-2">
+            <a href="#/library" class="flex items-center gap-3 text-neutral-300 hover:text-white font-bold">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 22V2l7 5 7-5v20l-7-5-7 5zm16-1.27V3.27l2 1.43v14.6l-2 1.43z"/></svg>
+              Your Library
+            </a>
+            <button id="btn-create-playlist" title="Create playlist"
+                    class="w-8 h-8 grid place-items-center rounded-full text-neutral-300 hover:text-white hover:bg-base-600 text-2xl leading-none">+</button>
+          </div>
+          <div class="px-2">
+            <a href="#/liked" class="flex items-center gap-3 p-2 rounded hover:bg-base-600">
+              <span class="w-12 h-12 rounded grid place-items-center bg-gradient-to-br from-yellow-500 to-amber-700 shrink-0">
+                <svg class="w-5 h-5 text-black" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.3C.6 8.7 2 5.5 5 5.5c1.9 0 3.2 1.2 4 2.4.8-1.2 2.1-2.4 4-2.4 3 0 4.4 3.2 3 6.2C19.5 16.4 12 21 12 21z"/></svg>
+              </span>
+              <div>
+                <p class="font-semibold leading-tight">Liked Songs</p>
+                <p class="text-xs text-neutral-400" id="liked-sub">Playlist</p>
+              </div>
+            </a>
+          </div>
+          <div id="playlist-list" class="flex-1 overflow-y-auto px-2 pb-2 scroll-thin space-y-1"></div>
+        </div>
+      </aside>
+
+      <!-- ============ MAIN ============ -->
+      <main class="flex-1 flex flex-col bg-base-800 rounded-lg overflow-hidden min-w-0">
+        <header class="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 shrink-0 sticky top-0 z-10" id="topbar">
+          <div class="flex items-center gap-2">
+            <button id="btn-back" class="w-8 h-8 grid place-items-center rounded-full bg-black/40 hover:bg-black/60 disabled:opacity-40" title="Back">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M15.7 5.3L9 12l6.7 6.7-1.4 1.4L6.2 12l8.1-8.1z"/></svg>
+            </button>
+            <button id="btn-fwd" class="w-8 h-8 grid place-items-center rounded-full bg-black/40 hover:bg-black/60 disabled:opacity-40 md:inline-grid hidden" title="Forward">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8.3 5.3L15 12l-6.7 6.7 1.4 1.4L17.8 12 9.7 3.9z"/></svg>
+            </button>
+            <a href="#/home" class="md:hidden ml-1 font-bold flex items-center gap-1"><svg class="w-7 h-7 text-brand" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="currentColor"/><rect x="6.3" y="10.2" width="11.4" height="3.6" rx="1.8" fill="#0a0a0a"/></svg></a>
+          </div>
+
+          <div class="flex items-center gap-2 md:hidden">
+            <a href="#/search" class="w-9 h-9 grid place-items-center rounded-full bg-black/40"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M10.5 3a7.5 7.5 0 015.94 12.08l4.24 4.24-1.42 1.42-4.24-4.24A7.5 7.5 0 1110.5 3z"/></svg></a>
+            <a href="#/library" class="w-9 h-9 grid place-items-center rounded-full bg-black/40"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 22V2l7 5 7-5v20l-7-5-7 5z"/></svg></a>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Spotify connection state -->
+            <button id="btn-spotify" class="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold bg-black/50 hover:bg-black/70">
+              <svg class="w-4 h-4 text-spotify" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm4.6 14.4a.8.8 0 01-1.1.3c-3-1.8-6.8-2.2-11.2-1.2a.8.8 0 11-.3-1.5c4.8-1.1 9-.6 12.4 1.4.4.2.5.7.2 1zm1.2-2.8a1 1 0 01-1.3.3c-3.4-2.1-8.6-2.7-12.6-1.5a1 1 0 11-.6-1.9c4.6-1.4 10.3-.7 14.2 1.7.5.3.6.9.3 1.4zm.1-2.9C14 8.2 7.7 8 4.4 9a1.2 1.2 0 11-.7-2.3C7.6 5.5 14.5 5.7 19 8.4a1.2 1.2 0 01-1.2 2z"/></svg>
+              <span id="spotify-label">Connect Spotify</span>
+            </button>
+
+            <div class="relative">
+              <button id="btn-user" class="flex items-center gap-2 bg-black/50 hover:bg-black/70 rounded-full pl-1 pr-3 py-1">
+                <span class="w-7 h-7 rounded-full bg-brand text-black grid place-items-center font-bold text-sm" id="user-initial"></span>
+                <span class="text-sm font-semibold hidden sm:inline" id="user-name"></span>
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+              </button>
+              <div id="user-menu" class="hidden absolute right-0 mt-2 w-52 bg-base-500 rounded-md shadow-xl py-1 z-50">
+                <button data-menu="profile" class="block w-full text-left px-4 py-2.5 text-sm hover:bg-base-600">Profile &amp; password</button>
+                <a id="admin-link" href="#" target="_blank" rel="noopener" class="hidden px-4 py-2.5 text-sm hover:bg-base-600">Admin panel</a>
+                <button data-menu="logout" class="block w-full text-left px-4 py-2.5 text-sm hover:bg-base-600">Log out</button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div id="view" class="flex-1 overflow-y-auto scroll-thin"></div>
+      </main>
+
+      <!-- ============ QUEUE PANEL ============ -->
+      <aside id="queue-panel" class="hidden xl:flex w-[320px] shrink-0 flex-col bg-base-800 rounded-lg overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
+          <h2 class="font-bold">Queue</h2>
+          <div class="flex items-center gap-1">
+            <button data-action="clear-queue" title="Clear the queue"
+                    class="text-xs px-2 py-1 rounded text-neutral-400 hover:text-white hover:bg-base-600">Clear</button>
+            <button id="btn-close-queue" title="Hide queue"
+                    class="w-7 h-7 grid place-items-center rounded-full text-neutral-400 hover:text-white hover:bg-base-600">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.4L17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div id="queue-body" class="flex-1 overflow-y-auto scroll-thin p-2"></div>
+      </aside>
+    </div>
+
+    <!-- ============ PLAYER BAR ============ -->
+    <footer class="h-[88px] shrink-0 px-3 sm:px-4 grid grid-cols-3 items-center gap-2 bg-black border-t border-neutral-800">
+      <div class="flex items-center gap-3 min-w-0">
+        <img id="np-cover" class="w-14 h-14 rounded shrink-0 hidden sm:block" alt="">
+        <div class="min-w-0 hidden sm:block">
+          <p id="np-title" class="text-sm font-semibold truncate hover:underline cursor-pointer">—</p>
+          <p id="np-artist" class="text-xs text-neutral-400 truncate hover:underline cursor-pointer"></p>
+          <p id="np-source" class="sp-badge hidden"></p>
+        </div>
+        <button id="np-like" class="ml-1 text-neutral-400 hover:text-white shrink-0" title="Save to Liked Songs">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9.3C.6 8.7 2 5.5 5 5.5c1.9 0 3.2 1.2 4 2.4.8-1.2 2.1-2.4 4-2.4 3 0 4.4 3.2 3 6.2C19.5 16.4 12 21 12 21z"/></svg>
+        </button>
+      </div>
+
+      <div class="flex flex-col items-center gap-1 justify-self-center w-full max-w-[640px]">
+        <div class="flex items-center gap-3 sm:gap-5">
+          <button id="btn-shuffle" class="text-neutral-400 hover:text-white" title="Shuffle">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3l4 4-4 4v-3h-2.5l-2.3 3.2-1.2-1.7L13 7h4V3zM3 7h4.5l8 11H21v-3l4 4-4 4v-3h-6.5l-8-11H3V7z"/></svg>
+          </button>
+          <button id="btn-prev" class="text-neutral-300 hover:text-white" title="Previous">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 6h2v12H7zM20 6L9 12l11 6z"/></svg>
+          </button>
+          <button id="btn-play" class="w-10 h-10 rounded-full bg-white text-black grid place-items-center hover:scale-105 transition" title="Play">
+            <svg id="icon-play" class="w-5 h-5 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="icon-pause" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+          </button>
+          <button id="btn-next" class="text-neutral-300 hover:text-white" title="Next">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6h2v12h-2zM4 6l11 6L4 18z"/></svg>
+          </button>
+          <button id="btn-repeat" class="text-neutral-400 hover:text-white relative" title="Repeat">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+            <span id="repeat-one" class="hidden absolute -top-1 -right-1 text-[9px] font-bold bg-brand text-black rounded-full w-3.5 h-3.5 grid place-items-center">1</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-2 w-full">
+          <span id="cur-time" class="text-[11px] text-neutral-400 w-9 text-right tabular-nums">0:00</span>
+          <input id="seek" type="range" min="0" max="100" value="0" step="0.1" class="player-range flex-1">
+          <span id="dur-time" class="text-[11px] text-neutral-400 w-9 tabular-nums">0:00</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3 justify-self-end">
+        <button id="btn-toggle-queue" class="text-neutral-400 hover:text-white" title="Queue">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h13v2H3zM3 11h13v2H3zM3 16h9v2H3zM16 11l5 3-5 3z"/></svg>
+        </button>
+        <button id="btn-mute" class="text-neutral-400 hover:text-white" title="Mute">
+          <svg id="icon-vol" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 00-2.5-4v8a4.5 4.5 0 002.5-4zm-2.5-9v2.06A7 7 0 0119 12a7 7 0 01-5 6.94V21a9 9 0 000-18z"/></svg>
+          <svg id="icon-mute" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm18.3-1.3l-1.4-1.4L16 10.2 12.1 6.3 10.7 7.7 14.6 11.6 10.7 15.5l1.4 1.4L16 13l3.9 3.9 1.4-1.4L17.4 11.6z"/></svg>
+        </button>
+        <input id="volume" type="range" min="0" max="100" value="70" class="player-range w-20 sm:w-24">
+      </div>
+    </footer>
+  </div>
+
+  <!-- audio engine (single element so playback survives navigation) -->
+  <audio id="audio"></audio>
+
+  <div id="toast" class="fixed bottom-28 left-1/2 -translate-x-1/2 z-[60] hidden">
+    <div class="bg-brand text-black font-semibold text-sm px-4 py-2 rounded-full shadow-lg" id="toast-msg"></div>
+  </div>
+
+  <div id="context-menu" class="hidden fixed z-[70] w-60 bg-base-500 rounded-md shadow-2xl py-1 text-sm"></div>
+  <div id="modal-root" class="hidden fixed inset-0 z-[80] bg-black/70 grid place-items-center p-4"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/queue.js"></script>
+  <script src="js/spotify.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

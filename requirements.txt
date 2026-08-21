@@ -1,9 +1,0 @@
-Flask>=3.0
-Flask-SQLAlchemy>=3.1
-Flask-Login>=0.6
-Flask-Bcrypt>=1.0
-PyMySQL>=1.1
-python-dotenv>=1.0
-# Only needed if your MySQL uses caching_sha2_password auth (MySQL 8+).
-# XAMPP ships MariaDB which does not require it, so it is optional.
-# cryptography>=42
