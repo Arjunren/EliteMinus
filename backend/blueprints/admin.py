@@ -6,9 +6,11 @@ audit log.
 """
 import csv
 import io
+import os
 import random
 import re
 import secrets
+import uuid
 from datetime import date, timedelta
 from functools import wraps
 
@@ -16,10 +18,11 @@ from flask import (Blueprint, Response, current_app, jsonify, redirect,
                    render_template, request, url_for)
 from flask_login import current_user
 from sqlalchemy import func, or_
+from werkzeug.utils import secure_filename
 
 from extensions import db
 from models import (ROLES, STATUSES, Album, Artist, AuditLog, LikedSong,
-                    PlayHistory, Playlist, Song, User, utcnow)
+                    MusicSuggestion, PlayHistory, Playlist, Song, User, utcnow)
 from services import audit, mailer
 from services import spotify_client as sp
 
@@ -28,6 +31,7 @@ admin_bp = Blueprint("admin", __name__)
 DEFAULT_AUDIO = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-{}.mp3"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$")
 MIN_PASSWORD = 8
+MUSIC_UPLOAD_PREFIX = "/static/uploads/music/"
 
 
 def admin_required(f):
@@ -64,6 +68,34 @@ def _parse_date(value):
         return date.fromisoformat((value or "").strip())
     except (ValueError, AttributeError):
         return None
+
+
+def _valid_http_url(value):
+    value = (value or "").strip()
+    return value if value.startswith(("https://", "http://")) else None
+
+
+def _music_upload_dir():
+    path = os.path.join(current_app.root_path, "static", "uploads", "music")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _remove_local_music(audio_url):
+    """Remove a managed upload, never an arbitrary path supplied by a user."""
+    if not (audio_url or "").startswith(MUSIC_UPLOAD_PREFIX):
+        return
+    filename = os.path.basename(audio_url)
+    path = os.path.join(_music_upload_dir(), filename)
+    if os.path.isfile(path):
+        os.remove(path)
+
+
+def _is_mp3(upload):
+    """Small content check in addition to the extension/MIME allow-list."""
+    header = upload.stream.read(10)
+    upload.stream.seek(0)
+    return header.startswith(b"ID3") or (len(header) >= 2 and header[0] == 0xff)
 
 
 # --------------------------------------------------------------------------
@@ -466,9 +498,85 @@ def admin_audit():
     return jsonify([a.to_dict() for a in rows])
 
 
+# ===========================================================================
+# LISTENER MUSIC SUGGESTIONS
+# ===========================================================================
+@admin_bp.route("/api/admin/music-suggestions", methods=["GET"])
+@admin_required
+def admin_music_suggestions():
+    rows = (MusicSuggestion.query.order_by(MusicSuggestion.created_at.desc())
+            .limit(500).all())
+    return jsonify([row.to_dict() for row in rows])
+
+
+@admin_bp.route("/api/admin/music-suggestions/<int:suggestion_id>",
+                methods=["DELETE"])
+@admin_required
+def admin_delete_music_suggestion(suggestion_id):
+    suggestion = MusicSuggestion.query.get_or_404(suggestion_id)
+    title = suggestion.title
+    db.session.delete(suggestion)
+    db.session.commit()
+    audit.record("music_suggestion.deleted", target=title)
+    return jsonify(deleted=True, id=suggestion_id)
+
+
 # ==========================================================================
 # MUSIC CATALOG
-# ==========================================================================
+# ===========================================================================
+@admin_bp.route("/api/admin/music-upload", methods=["POST"])
+@admin_required
+def admin_music_upload():
+    """Add an MP3 the administrator owns or is licensed to distribute."""
+    title = (request.form.get("title") or "").strip()[:150]
+    artist_name = (request.form.get("artist_name") or "").strip()[:120]
+    poster_url = _valid_http_url(request.form.get("poster_url"))
+    upload = request.files.get("audio")
+
+    if not title:
+        return jsonify(error="Title is required."), 400
+    if not artist_name:
+        return jsonify(error="Artist name is required."), 400
+    if not upload or not upload.filename:
+        return jsonify(error="Choose an MP3 file to upload."), 400
+
+    original = secure_filename(upload.filename)
+    if (not original.lower().endswith(".mp3") or not _is_mp3(upload)):
+        return jsonify(error="Only valid MP3 audio files are accepted."), 400
+
+    artist = (Artist.query.filter(func.lower(Artist.name) == artist_name.lower())
+              .first())
+    if not artist:
+        artist = Artist(name=artist_name, image_seed=artist_name)
+        db.session.add(artist)
+        db.session.flush()
+
+    filename = f"{uuid.uuid4().hex}.mp3"
+    path = os.path.join(_music_upload_dir(), filename)
+    try:
+        upload.save(path)
+        song = Song(
+            title=title,
+            artist_id=artist.id,
+            audio_url=MUSIC_UPLOAD_PREFIX + filename,
+            image_url=poster_url,
+            duration=_int(request.form.get("duration"), 0),
+            track_number=1,
+            play_count=0,
+        )
+        db.session.add(song)
+        db.session.commit()
+    except Exception:  # noqa: BLE001 - clean up a failed upload transaction
+        db.session.rollback()
+        if os.path.isfile(path):
+            os.remove(path)
+        raise
+
+    audit.record("music.uploaded", target=song.title,
+                 detail=f"{song.music_id} by {artist.name}")
+    return jsonify(_song_row(song)), 201
+
+
 @admin_bp.route("/api/admin/songs", methods=["GET", "POST"])
 @admin_required
 def admin_songs():
@@ -514,6 +622,7 @@ def admin_song(song_id):
     song = Song.query.get_or_404(song_id)
     if request.method == "DELETE":
         title = song.title
+        _remove_local_music(song.audio_url)
         db.session.delete(song)
         db.session.commit()
         audit.record("song.deleted", target=title)
@@ -538,11 +647,12 @@ def admin_song(song_id):
 
 
 def _song_row(s):
-    return {"id": s.id, "title": s.title,
+    return {"id": s.id, "music_id": s.music_id, "title": s.title,
             "artist": {"id": s.artist.id, "name": s.artist.name} if s.artist else None,
             "album": {"id": s.album.id, "title": s.album.title} if s.album else None,
             "duration": s.duration, "play_count": s.play_count,
-            "audio_url": s.audio_url, "spotify_id": s.spotify_id,
+            "audio_url": s.audio_url, "image_url": s.image_url,
+            "spotify_id": s.spotify_id,
             "image": s.image}
 
 

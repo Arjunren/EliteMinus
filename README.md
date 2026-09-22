@@ -1,6 +1,6 @@
-# 🟡 EliteMinus — music app + staff management
+# 🟡 EliteMinus — locally hosted music + staff management
 
-EliteMinus is a Spotify-style listener application with a Flask staff-management
+EliteMinus is a music listener application with a Flask staff-management
 backend. It uses Python/MySQL on PythonAnywhere for the API and admin panel,
 and a static Vanilla JavaScript client on Vercel for listeners.
 
@@ -25,7 +25,8 @@ and a static Vanilla JavaScript client on Vercel for listeners.
 | **History** | Plays are recorded and power "Recently played". |
 | **Cover art** | Generated on the fly by Flask as gradient SVGs — no image files needed, works offline. |
 | **Staff management** | `/admin` provides staff roles, departments, status/approval, invites, password resets, auditing, CSV export, and catalog controls. |
-| **Spotify** | Spotify catalog search/import and OAuth account linking. Premium listeners can use Spotify browser playback. |
+| **Local MP3 library** | Admins upload MP3 files they own or are licensed to distribute; the app stores metadata in MySQL and streams files from PythonAnywhere. |
+| **Music suggestions** | Listeners can submit a title and YouTube reference link for administrator review. |
 
 > Audio uses royalty-free demo tracks from soundhelix.com, so playback needs an
 > internet connection. Everything else works locally.
@@ -40,8 +41,8 @@ EliteMinus/
 │   ├── app.py               # Flask API and server-rendered staff admin
 │   ├── wsgi.py              # PythonAnywhere entry point
 │   ├── models.py            # MySQL models (users, OTPs, queue, playlists, …)
-│   ├── services/            # SMTP, OTP, token, audit, Spotify helpers
-│   ├── blueprints/          # Auth, API, admin, Spotify routes
+│   ├── services/            # SMTP, OTP, token, and audit helpers
+│   ├── blueprints/          # Auth, listener API, and admin routes
 │   ├── templates/           # Admin + fallback auth pages
 │   ├── static/              # Admin assets
 │   ├── requirements.txt
@@ -121,7 +122,7 @@ password:  demo12345
 ## Deploy
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for the exact folders, commands and settings
-for PythonAnywhere, PythonAnywhere MySQL, Vercel, SMTP OTP, CORS and Spotify.
+for PythonAnywhere, PythonAnywhere MySQL, Vercel, SMTP OTP, CORS, and MP3 uploads.
 
 ---
 

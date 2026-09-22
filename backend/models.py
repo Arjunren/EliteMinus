@@ -113,6 +113,30 @@ class QueueItem(db.Model):
     song = db.relationship("Song")
 
 
+class MusicSuggestion(db.Model):
+    """A listener's request for music an admin may source lawfully."""
+    __tablename__ = "music_suggestions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"),
+                        nullable=False, index=True)
+    title = db.Column(db.String(150), nullable=False)
+    youtube_url = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, index=True)
+
+    user = db.relationship("User")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "youtube_url": self.youtube_url,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "user": {"id": self.user.id, "username": self.user.username,
+                     "email": self.user.email} if self.user else None,
+        }
+
+
 # --------------------------------------------------------------------------
 # Staff / accounts
 # --------------------------------------------------------------------------
@@ -403,6 +427,7 @@ class Song(db.Model):
     track_number = db.Column(db.Integer, default=1)
     duration = db.Column(db.Integer, default=0)        # seconds
     audio_url = db.Column(db.String(500))              # mp3 / preview, may be null
+    image_url = db.Column(db.String(500))              # optional poster / cover
     play_count = db.Column(db.Integer, default=0)
 
     # --- Spotify provenance ---
@@ -417,7 +442,14 @@ class Song(db.Model):
     album = db.relationship("Album", back_populates="songs")
 
     @property
+    def music_id(self):
+        """Human-friendly identifier shown after a local MP3 is uploaded."""
+        return f"MP3-{self.id:06d}"
+
+    @property
     def image(self):
+        if self.image_url:
+            return self.image_url
         if self.album:
             return self.album.image
         return cover_url(self.title)
@@ -425,6 +457,7 @@ class Song(db.Model):
     def to_dict(self, liked_ids=None):
         return {
             "id": self.id,
+            "music_id": self.music_id,
             "type": "song",
             "title": self.title,
             "artist": {"id": self.artist.id, "name": self.artist.name}

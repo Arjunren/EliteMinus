@@ -28,13 +28,7 @@ function likeBtn(song) {
     title="${song.liked ? "Remove from Liked Songs" : "Save to Liked Songs"}">${song.liked ? ICON.heartFill : ICON.heart}</button>`;
 }
 
-/** A small marker so listeners know what they'll actually hear. */
-function sourceBadge(song) {
-  if (!song.spotify_uri) return "";
-  const full = window.Spotify && Spotify.canStream;
-  return `<span class="hidden lg:inline text-[10px] font-bold uppercase tracking-wide ${full ? "text-spotify" : "text-neutral-600"}"
-    title="${full ? "Streams as a full track from Spotify" : "Plays as a 30-second preview — connect Spotify Premium for the full track"}">${full ? "full" : "30s"}</span>`;
-}
+function sourceBadge(_song) { return ""; }
 
 /* A single track row. opts: { showAlbum, showCover, number } */
 function songRow(song, i, opts = {}) {
@@ -350,8 +344,8 @@ function renderSearch(data, q) {
   if (nothing)
     return `<div class="view-enter px-6 pt-10 text-center">
       <p class="text-2xl font-bold mb-2">No results found for "${escapeHtml(q)}"</p>
-      <p class="text-neutral-400 mb-6">Check your spelling, or ask an admin to
-        import it from Spotify.</p></div>`;
+      <p class="text-neutral-400 mb-6">Check your spelling, or use the Suggest
+        music link in the footer to ask an administrator to add it.</p></div>`;
 
   const topSong = data.songs[0];
   const topResult = topSong ? `

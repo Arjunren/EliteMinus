@@ -41,6 +41,11 @@ class Config:
     # well before that and always ping before handing a connection out.
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
 
+    # --- Locally hosted music -------------------------------------------
+    # Audio files themselves live under backend/static/uploads/music. MySQL
+    # stores only the track metadata and the public static-file path.
+    MAX_CONTENT_LENGTH = int(os.getenv("MAX_MUSIC_UPLOAD_BYTES", 25 * 1024 * 1024))
+
     # --- Cross-origin (the Vercel front-end talks to this API) ----------
     # Comma-separated list, e.g. "https://elite-minus.vercel.app,http://localhost:3000"
     CORS_ORIGINS = _list("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5500")

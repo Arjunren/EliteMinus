@@ -30,7 +30,6 @@ async function init() {
   await Queue.load();
   Player.loadCurrent(false);     // show the last track, paused
   loadSidebar();
-  Spotify.init();
 
   // routing
   window.addEventListener("hashchange", () => { closeMenus(); router(); });
@@ -54,7 +53,7 @@ async function init() {
   document.getElementById("btn-fwd").onclick = () => history.forward();
   document.getElementById("btn-toggle-queue").onclick = toggleQueuePanel;
   document.getElementById("btn-close-queue").onclick = toggleQueuePanel;
-  document.getElementById("btn-spotify").onclick = onSpotifyButton;
+  document.getElementById("btn-suggest-music").onclick = openSuggestMusic;
 
   const userBtn = document.getElementById("btn-user");
   userBtn.addEventListener("click", (e) => {
@@ -276,34 +275,6 @@ function toggleQueuePanel() {
   document.getElementById("btn-toggle-queue")
     .classList.toggle("text-brand", hidden);
   if (hidden) Queue.render();
-}
-
-/* ===================== spotify ===================== */
-function onSpotifyButton(e) {
-  e.stopPropagation();
-  if (!Spotify.connected) { Spotify.link(); return; }
-
-  const lines = [
-    `<p class="text-sm text-neutral-300 mb-1">Connected as
-       <b class="text-white">${escapeHtml(Spotify.status.display_name || "your account")}</b></p>`,
-    Spotify.canStream
-      ? `<p class="text-sm text-spotify mb-4">Premium — imported tracks play in full.</p>`
-      : `<p class="text-sm text-amber-300 mb-4">Your Spotify plan is
-           <b>${escapeHtml(Spotify.status.product || "free")}</b>. Full-track streaming
-           needs Premium; you'll hear 30-second previews instead.</p>`,
-  ].join("");
-
-  openModal(`
-    <h2 class="text-xl font-bold mb-3">Spotify</h2>
-    ${lines}
-    <div class="flex justify-end gap-2">
-      <button data-close class="px-4 py-2 rounded-full text-sm font-bold hover:bg-base-600">Close</button>
-      <button id="sp-disconnect" class="px-5 py-2 rounded-full bg-red-500 text-white text-sm font-bold hover:bg-red-600">Disconnect</button>
-    </div>`);
-  document.getElementById("sp-disconnect").onclick = async () => {
-    try { await Spotify.disconnect(); closeModal(); }
-    catch (err) { toast(err.message); }
-  };
 }
 
 /* ===================== context menu ===================== */
@@ -620,4 +591,29 @@ async function duplicatePlaylist() {
     toast("Saved to your library");
     location.hash = "#/playlist/" + copy.id;
   } catch (err) { toast(err.message || "Could not copy playlist"); }
+}
+
+function openSuggestMusic() {
+  openModal(`
+    <form id="suggest-music-form" class="space-y-4">
+      <h2 class="text-2xl font-bold">Suggest music</h2>
+      <p class="text-sm text-neutral-400">Send a YouTube link as a reference. An administrator will review it; submitting a link does not guarantee it will be added.</p>
+      <div><label class="block text-sm font-semibold mb-1">Music title</label>
+        <input name="title" required maxlength="150" class="${INPUT_CLS}" placeholder="Title — artist"></div>
+      <div><label class="block text-sm font-semibold mb-1">YouTube link</label>
+        <input name="youtube_url" required type="url" class="${INPUT_CLS}" placeholder="https://www.youtube.com/watch?v=…"></div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" data-close class="px-4 py-2 rounded-full text-sm font-bold hover:bg-base-600">Cancel</button>
+        <button type="submit" class="px-5 py-2 rounded-full bg-brand text-black text-sm font-bold">Send suggestion</button>
+      </div>
+    </form>`);
+  document.getElementById("suggest-music-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    try {
+      await API.suggestMusic({ title: form.get("title"), youtube_url: form.get("youtube_url") });
+      closeModal();
+      toast("Suggestion sent for review");
+    } catch (err) { toast(err.message || "Could not send suggestion"); }
+  });
 }

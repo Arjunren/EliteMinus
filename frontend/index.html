@@ -11,7 +11,6 @@
       colors: {
         brand: { DEFAULT: '#facc15', dark: '#eab308', light: '#fde047' },
         base: { 900: '#000000', 800: '#121212', 700: '#181818', 600: '#242424', 500: '#2a2a2a' },
-        spotify: '#1db954'
       },
       fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
     }}}
@@ -87,12 +86,6 @@
           </div>
 
           <div class="flex items-center gap-2">
-            <!-- Spotify connection state -->
-            <button id="btn-spotify" class="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold bg-black/50 hover:bg-black/70">
-              <svg class="w-4 h-4 text-spotify" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm4.6 14.4a.8.8 0 01-1.1.3c-3-1.8-6.8-2.2-11.2-1.2a.8.8 0 11-.3-1.5c4.8-1.1 9-.6 12.4 1.4.4.2.5.7.2 1zm1.2-2.8a1 1 0 01-1.3.3c-3.4-2.1-8.6-2.7-12.6-1.5a1 1 0 11-.6-1.9c4.6-1.4 10.3-.7 14.2 1.7.5.3.6.9.3 1.4zm.1-2.9C14 8.2 7.7 8 4.4 9a1.2 1.2 0 11-.7-2.3C7.6 5.5 14.5 5.7 19 8.4a1.2 1.2 0 01-1.2 2z"/></svg>
-              <span id="spotify-label">Connect Spotify</span>
-            </button>
-
             <div class="relative">
               <button id="btn-user" class="flex items-center gap-2 bg-black/50 hover:bg-black/70 rounded-full pl-1 pr-3 py-1">
                 <span class="w-7 h-7 rounded-full bg-brand text-black grid place-items-center font-bold text-sm" id="user-initial"></span>
@@ -170,6 +163,9 @@
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3 justify-self-end">
+        <button id="btn-suggest-music" class="text-xs text-neutral-400 hover:text-white underline underline-offset-4" title="Suggest music">
+          Suggest music
+        </button>
         <button id="btn-toggle-queue" class="text-neutral-400 hover:text-white" title="Queue">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h13v2H3zM3 11h13v2H3zM3 16h9v2H3zM16 11l5 3-5 3z"/></svg>
         </button>
@@ -196,7 +192,6 @@
   <script src="js/api.js"></script>
   <script src="js/components.js"></script>
   <script src="js/queue.js"></script>
-  <script src="js/spotify.js"></script>
   <script src="js/player.js"></script>
   <script src="js/app.js"></script>
 </body>

@@ -24,6 +24,14 @@ const API = {
   post(u, b) { return this._req("POST", u, b || {}); },
   put(u, b)  { return this._req("PUT", u, b || {}); },
   del(u)     { return this._req("DELETE", u); },
+  async upload(u, formData) {
+    const res = await fetch(u, {
+      method: "POST", body: formData, credentials: "same-origin",
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((data && data.error) || res.statusText);
+    return data;
+  },
 };
 
 /* ---- formatting helpers ---- */

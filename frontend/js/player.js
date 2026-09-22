@@ -1,33 +1,21 @@
 /* ---------------------------------------------------------------------------
  * player.js — the audio engine.
  *
- * The queue lives in queue.js; this file only decides *how* the current entry
- * is played and drives the transport bar. Two back-ends:
+ * The queue lives in queue.js; this file drives the persistent local-MP3
+ * audio element and the transport bar.
  *
- *   "spotify" — full track via the Web Playback SDK (Premium accounts only)
- *   "audio"   — the <audio> element, playing `audio_url` (preview or mp3)
- *
- * Which one is used is decided per track in `loadCurrent`, so a queue can mix
- * imported Spotify tracks and locally hosted ones without the user noticing.
+ * Tracks are served from the PythonAnywhere backend; this player uses one
+ * persistent `<audio>` element so playback survives client-side navigation.
  * ------------------------------------------------------------------------- */
 const Player = {
   audio: null,
-  mode: "audio",
   shuffle: false,
   repeat: "off",          // off | all | one
   _seeking: false,
   _recorded: false,
   _skips: 0,              // guards against looping over unplayable tracks
-  _spotifyTimer: null,
-  _spotifyPos: 0,
-  _spotifyDur: 0,
-  _spotifyPaused: true,
-
   get current() { return Queue.current; },
-  get isPlaying() {
-    return this.mode === "spotify" ? !this._spotifyPaused
-                                   : !!(this.audio && !this.audio.paused);
-  },
+  get isPlaying() { return !!(this.audio && !this.audio.paused); },
 
   init() {
     this.audio = document.getElementById("audio");
@@ -39,14 +27,12 @@ const Player = {
     volEl.value = Math.round(volume * 100);
     this._fill(volEl);
 
-    Spotify.onState = (state) => this._onSpotifyState(state);
-
     this._bindControls();
     this._bindAudio();
   },
 
   /* ---------------- public API ---------------- */
-  /** Play a list of tracks — this replaces the queue, like Spotify does. */
+  /** Play a list of tracks — this replaces the queue. */
   async play(tracks, index = 0) {
     if (!tracks || !tracks.length) return;
     await Queue.replace(tracks, index);
@@ -58,11 +44,6 @@ const Player = {
   toggle() {
     if (!this.current) {
       if (UI.viewTracks && UI.viewTracks.length) this.play(UI.viewTracks, 0);
-      return;
-    }
-    if (this.mode === "spotify") {
-      if (this._spotifyPaused) Spotify.resume();
-      else Spotify.pause();
       return;
     }
     if (this.audio.paused) {
@@ -107,19 +88,14 @@ const Player = {
     if (!song) { this._stop(); this._renderNowPlaying(); return; }
     this._recorded = false;
 
-    if (Spotify.canPlay(song)) {
-      this._useSpotify(song, autoplay);
-    } else if (song.audio_url) {
+    if (song.audio_url) {
       this._useAudio(song, autoplay);
     } else {
-      // Imported from Spotify but no preview, and the listener isn't Premium.
       this._skips++;
       this._renderNowPlaying();
       if (this._skips > 3 || !autoplay) {
         this._skips = 0;
-        toast(song.spotify_uri
-          ? "Connect Spotify Premium to play this track"
-          : "This track has no playable audio");
+        toast("This track has no playable audio");
         return;
       }
       this.next(false);
@@ -141,91 +117,21 @@ const Player = {
 
   /* ---------------- back-end: <audio> ---------------- */
   _useAudio(song, autoplay) {
-    this._stopSpotifyPolling();
-    if (this.mode === "spotify") Spotify.pause();
-    this.mode = "audio";
-    this.audio.src = song.audio_url;
+    // Uploaded MP3s are hosted by PythonAnywhere, while this UI is on Vercel.
+    this.audio.src = API.asset(song.audio_url);
     if (autoplay) {
       const p = this.audio.play();
       if (p && p.catch) p.catch(() => {});  // autoplay may be blocked initially
     }
   },
 
-  /* ---------------- back-end: Spotify SDK ---------------- */
-  async _useSpotify(song, autoplay) {
-    this.audio.pause();
-    this.audio.removeAttribute("src");
-    this.mode = "spotify";
-    this._spotifyDur = (song.duration || 0) * 1000;
-    this._spotifyPos = 0;
-
-    if (!autoplay) { this._spotifyPaused = true; this._updatePlayIcon(); return; }
-    try {
-      await Spotify.playTrack(song.spotify_uri);
-      this._spotifyPaused = false;
-      this._startSpotifyPolling();
-    } catch (err) {
-      toast(err.message || "Spotify playback failed");
-      // Fall back to the preview rather than leaving the user stuck.
-      if (song.audio_url) this._useAudio(song, true);
-    }
-  },
-
-  _onSpotifyState(state) {
-    if (this.mode !== "spotify") return;
-    const wasPlaying = !this._spotifyPaused;
-    this._spotifyPaused = state.paused;
-    this._spotifyPos = state.position;
-    this._spotifyDur = state.duration || this._spotifyDur;
-
-    // The SDK reports a finished track as paused at position 0.
-    if (state.paused && state.position === 0 && wasPlaying) {
-      this.next(false);
-      return;
-    }
-    this._updatePlayIcon();
-    this._recordPlayOnce();
-    UI.markPlaying();
-  },
-
-  _startSpotifyPolling() {
-    this._stopSpotifyPolling();
-    this._spotifyTimer = setInterval(async () => {
-      const state = await Spotify.position();
-      if (!state) return;
-      this._spotifyPos = state.position;
-      this._spotifyDur = state.duration || this._spotifyDur;
-      this._spotifyPaused = state.paused;
-      if (!this._seeking) this._renderProgress(state.position / 1000,
-                                               state.duration / 1000);
-      this._updatePlayIcon();
-      this._recordPlayOnce();
-    }, 500);
-  },
-
-  _stopSpotifyPolling() {
-    if (this._spotifyTimer) clearInterval(this._spotifyTimer);
-    this._spotifyTimer = null;
-  },
-
   /* ---------------- transport helpers ---------------- */
-  position() {
-    return this.mode === "spotify" ? this._spotifyPos / 1000
-                                   : (this.audio.currentTime || 0);
-  },
-  duration() {
-    if (this.mode === "spotify") return this._spotifyDur / 1000;
-    return this.audio.duration || (this.current ? this.current.duration : 0) || 0;
-  },
-  seekTo(seconds) {
-    if (this.mode === "spotify") Spotify.seek(Math.round(seconds * 1000));
-    else this.audio.currentTime = seconds;
-  },
+  position() { return this.audio.currentTime || 0; },
+  duration() { return this.audio.duration || (this.current ? this.current.duration : 0) || 0; },
+  seekTo(seconds) { this.audio.currentTime = seconds; },
   _restart() { this.seekTo(0); if (!this.isPlaying) this.toggle(); },
   _stop() {
-    this._stopSpotifyPolling();
-    if (this.mode === "spotify") Spotify.pause();
-    else { this.audio.pause(); this.audio.currentTime = 0; }
+    this.audio.pause(); this.audio.currentTime = 0;
     this._updatePlayIcon();
   },
 
@@ -295,14 +201,12 @@ const Player = {
       const v = vol.value / 100;
       this.audio.volume = v;
       this.audio.muted = false;
-      Spotify.setVolume(v);
       localStorage.setItem("vol", v);
       this._fill(vol);
       this._updateVolIcon();
     });
     document.getElementById("btn-mute").onclick = () => {
       this.audio.muted = !this.audio.muted;
-      Spotify.setVolume(this.audio.muted ? 0 : this.audio.volume);
       this._updateVolIcon();
     };
 
@@ -367,16 +271,7 @@ const Player = {
       song.artist ? song.artist.name : "";
     document.getElementById("dur-time").textContent = fmtTime(song.duration);
 
-    // Tell the user which source they're hearing — full track or 30s preview.
-    if (this.mode === "spotify") {
-      source.textContent = "▸ Spotify · full track";
-      source.classList.remove("hidden");
-    } else if (song.spotify_uri) {
-      source.textContent = "▸ 30-second preview";
-      source.classList.remove("hidden");
-    } else {
-      source.classList.add("hidden");
-    }
+    source.classList.add("hidden");
 
     this._updateLikeIcon();
     this._updatePlayIcon();

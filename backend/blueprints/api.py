@@ -5,6 +5,7 @@ on the same origin) or an ``Authorization: Bearer`` token (the Vercel site) —
 see the ``request_loader`` in ``app.py``.
 """
 import hashlib
+from urllib.parse import urlparse
 
 from flask import Blueprint, Response, jsonify, request
 from flask_login import current_user, login_required
@@ -12,7 +13,8 @@ from sqlalchemy import func, or_
 
 from extensions import db
 from models import (Album, Artist, LikedSong, PlayHistory, Playlist,
-                    PlaylistSong, QueueItem, Song, followed_artists)
+                    PlaylistSong, QueueItem, Song, MusicSuggestion,
+                    followed_artists)
 
 api_bp = Blueprint("api", __name__)
 
@@ -101,6 +103,40 @@ def update_me():
         current_user.phone = (data["phone"] or "").strip()[:40] or None
     db.session.commit()
     return jsonify(current_user.to_dict())
+
+
+# --------------------------------------------------------------------------
+# Music suggestions
+# --------------------------------------------------------------------------
+@api_bp.route("/music-suggestions", methods=["POST"])
+@login_required
+def create_music_suggestion():
+    """Queue a YouTube reference for an admin to review.
+
+    The application stores the link only; it never downloads or converts the
+    linked material. Admins can obtain and upload music they are authorised to
+    distribute through the local-MP3 upload screen.
+    """
+    data = request.get_json(silent=True) or {}
+    title = (data.get("title") or "").strip()[:150]
+    youtube_url = (data.get("youtube_url") or "").strip()[:500]
+    host = (urlparse(youtube_url).hostname or "").lower()
+    allowed_hosts = {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"}
+
+    if not title:
+        return jsonify(error="Music title is required."), 400
+    if host not in allowed_hosts:
+        return jsonify(error="Please enter a valid YouTube link."), 400
+
+    # A modest per-user cap prevents the review queue from being spammed.
+    if MusicSuggestion.query.filter_by(user_id=current_user.id).count() >= 20:
+        return jsonify(error="You already have 20 suggestions waiting for review."), 429
+
+    suggestion = MusicSuggestion(user_id=current_user.id, title=title,
+                                 youtube_url=youtube_url)
+    db.session.add(suggestion)
+    db.session.commit()
+    return jsonify(suggestion.to_dict()), 201
 
 
 @api_bp.route("/me/password", methods=["PUT"])

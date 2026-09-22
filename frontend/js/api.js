@@ -38,6 +38,10 @@ const API = {
   url(path) {
     return path.startsWith("http") ? path : CONFIG.API_BASE + path;
   },
+  asset(path) {
+    return !path || path.startsWith("http") || path.startsWith("data:")
+      ? path : CONFIG.API_BASE + path;
+  },
 
   async _req(method, path, body) {
     const opts = { method, headers: {} };
@@ -98,6 +102,7 @@ const API = {
   like(id, on)               { return this._req(on ? "PUT" : "DELETE", "/api/songs/" + id + "/like"); },
   library()                  { return this.get("/api/library"); },
   recordPlay(songId)         { return this.post("/api/history", { song_id: songId }); },
+  suggestMusic(data)         { return this.post("/api/music-suggestions", data); },
 
   // --- playlists --------------------------------------------------------
   playlists()                { return this.get("/api/playlists"); },
@@ -120,16 +125,6 @@ const API = {
   queueMove(from, to)        { return this.post("/api/queue/move", { from, to }); },
   queueClear()               { return this.del("/api/queue"); },
 
-  // --- spotify ----------------------------------------------------------
-  spotifyStatus()            { return this.get("/api/spotify/status"); },
-  spotifyToken()             { return this.get("/api/spotify/token"); },
-  spotifySearch(q)           { return this.get("/api/spotify/search?q=" + encodeURIComponent(q)); },
-  spotifyDisconnect()        { return this.post("/api/spotify/disconnect"); },
-  spotifyLinkUrl() {
-    const back = encodeURIComponent(location.href.split("?")[0]);
-    return this.url("/api/spotify/link?token=" + encodeURIComponent(Auth.token) +
-                    "&return_to=" + back);
-  },
 };
 
 /* ---- formatting helpers ---- */

@@ -25,6 +25,9 @@ const Admin = {
   albums:       ()      => API.get("/api/admin/albums"),
   createAlbum:  (d)     => API.post("/api/admin/albums", d),
   deleteAlbum:  (id)    => API.del("/api/admin/albums/" + id),
+  uploadMusic:  (data)  => API.upload("/api/admin/music-upload", data),
+  suggestions:  ()      => API.get("/api/admin/music-suggestions"),
+  deleteSuggestion: (id) => API.del("/api/admin/music-suggestions/" + id),
 
   // --- spotify ---
   spotifySearch: (q)    => API.get("/api/admin/spotify/search?q=" + encodeURIComponent(q)),
@@ -38,7 +41,7 @@ let searchTimer = null;
 const TITLES = {
   dashboard: "Dashboard", staff: "Staff directory", audit: "Activity log",
   songs: "Songs", artists: "Artists", albums: "Albums",
-  spotify: "Spotify import",
+  music: "Upload MP3", suggestions: "Music suggestions",
 };
 
 const ROLE_STYLE = {
@@ -74,7 +77,7 @@ function routeAdmin() {
   ({
     dashboard: showDashboard, staff: showStaff, audit: showAudit,
     songs: showSongs, artists: showArtists, albums: showAlbums,
-    spotify: showSpotify,
+    music: showMusicUpload, suggestions: showSuggestions,
   }[section] || showDashboard)();
 }
 
@@ -106,7 +109,6 @@ async function showDashboard() {
   const catalogCards = [
     ["Songs", fmtCount(s.catalog.songs)], ["Artists", fmtCount(s.catalog.artists)],
     ["Albums", fmtCount(s.catalog.albums)], ["Playlists", fmtCount(s.catalog.playlists)],
-    ["From Spotify", fmtCount(s.catalog.from_spotify)],
     ["Total plays", fmtCount(s.catalog.plays)],
   ];
   const maxPlays = Math.max(1, ...s.top_songs.map((x) => x.plays));
@@ -114,8 +116,6 @@ async function showDashboard() {
   const warnings = [];
   if (!s.mail_configured)
     warnings.push("SMTP isn't configured — verification codes are being written to the server log instead of e-mailed.");
-  if (!s.spotify_configured)
-    warnings.push("Spotify credentials aren't set — the import screen won't work.");
   if (s.staff.pending)
     warnings.push(`${s.staff.pending} account(s) are waiting for approval in the staff directory.`);
 
@@ -484,7 +484,7 @@ const KEY_SVG = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><p
 /* ============================ SONGS ============================ */
 function showSongs() {
   view().innerHTML = toolbar("song-search", "add-song", "+ Add song") +
-    tableShell(["Title", "Artist", "Album", "Duration", "Plays", "Source", ""], "song-rows");
+    tableShell(["Music ID", "Title", "Artist", "Album", "Duration", "Plays", "Source", ""], "song-rows");
   const input = document.getElementById("song-search");
   input.addEventListener("input", () => {
     clearTimeout(searchTimer);
@@ -501,6 +501,7 @@ async function loadSongs(q) {
     body.innerHTML = songs.length ? songs.map((s) => {
       state.songs[s.id] = s;
       return `<tr class="border-b border-white/5 hover:bg-white/5">
+        <td class="py-2.5 px-4 font-mono text-xs text-brand">${escapeHtml(s.music_id || "—")}</td>
         <td class="py-2.5 px-4 font-medium">${escapeHtml(s.title)}</td>
         <td class="py-2.5 px-4 text-neutral-300">${escapeHtml(s.artist ? s.artist.name : "—")}</td>
         <td class="py-2.5 px-4 text-neutral-400">${escapeHtml(s.album ? s.album.title : "—")}</td>
@@ -511,9 +512,9 @@ async function loadSongs(q) {
           ${iconBtn("edit-song", s.id, "Edit", EDIT_SVG)}
           ${iconBtn("del-song", s.id, "Delete", DEL_SVG, "text-red-400")}
         </td></tr>`;
-    }).join("") : `<tr><td colspan="7" class="py-8 px-4 text-center text-neutral-500">No songs found.</td></tr>`;
+    }).join("") : `<tr><td colspan="8" class="py-8 px-4 text-center text-neutral-500">No songs found.</td></tr>`;
   } catch (e) {
-    body.innerHTML = `<tr><td colspan="7" class="py-4 px-4 text-red-400">${escapeHtml(e.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8" class="py-4 px-4 text-red-400">${escapeHtml(e.message)}</td></tr>`;
   }
 }
 
@@ -569,6 +570,58 @@ function albumOptions(artistId, selectedId) {
   state.albums.filter((a) => !artistId || (a.artist && a.artist.id == artistId))
     .forEach((a) => opts.push(`<option value="${a.id}" ${a.id == selectedId ? "selected" : ""}>${escapeHtml(a.title)}</option>`));
   return opts.join("");
+}
+
+/* ============================ LOCAL MP3 UPLOAD ============================ */
+function showMusicUpload() {
+  view().innerHTML = `
+    <div class="max-w-2xl bg-base-700 rounded-lg p-5">
+      <h2 class="text-xl font-bold mb-2">Upload licensed MP3</h2>
+      <p class="text-sm text-neutral-400 mb-5">Upload music you own or are authorised to distribute. The MP3 is stored on the server; its music ID is assigned automatically after upload.</p>
+      <form id="music-upload-form" class="space-y-4">
+        <div><label class="block text-sm font-semibold mb-1">Title</label>
+          <input name="title" required maxlength="150" class="${INPUT}" placeholder="Song title"></div>
+        <div><label class="block text-sm font-semibold mb-1">Artist name</label>
+          <input name="artist_name" required maxlength="120" class="${INPUT}" placeholder="Artist"></div>
+        <div><label class="block text-sm font-semibold mb-1">Poster URL <span class="text-neutral-500 font-normal">(optional; from your metadata API)</span></label>
+          <input name="poster_url" type="url" class="${INPUT}" placeholder="https://…/cover.jpg"></div>
+        <div><label class="block text-sm font-semibold mb-1">MP3 file</label>
+          <input name="audio" type="file" accept="audio/mpeg,.mp3" required class="block w-full text-sm text-neutral-300 file:mr-4 file:rounded-full file:border-0 file:bg-brand file:px-4 file:py-2 file:font-bold file:text-black hover:file:bg-brand-dark"></div>
+        <p id="music-upload-result" class="hidden rounded bg-black/20 px-3 py-2 text-sm"></p>
+        <button type="submit" class="px-5 py-2 rounded-full bg-brand text-black text-sm font-bold">Upload music</button>
+      </form>
+    </div>`;
+  document.getElementById("music-upload-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true; button.textContent = "Uploading…";
+    try {
+      const song = await Admin.uploadMusic(new FormData(form));
+      const result = document.getElementById("music-upload-result");
+      result.textContent = `Uploaded “${song.title}”. Music ID: ${song.music_id}`;
+      result.classList.remove("hidden");
+      form.reset();
+      toast(`Music uploaded: ${song.music_id}`);
+    } catch (err) { toast(err.message); }
+    finally { button.disabled = false; button.textContent = "Upload music"; }
+  });
+}
+
+async function showSuggestions() {
+  loading();
+  try {
+    const suggestions = await Admin.suggestions();
+    view().innerHTML = tableShell(["Title", "YouTube reference", "Suggested by", "Date", ""], "suggestion-rows");
+    const body = document.getElementById("suggestion-rows");
+    body.innerHTML = suggestions.length ? suggestions.map((s) => `<tr class="border-b border-white/5 hover:bg-white/5">
+      <td class="py-3 px-4 font-medium">${escapeHtml(s.title)}</td>
+      <td class="py-3 px-4"><a class="text-sky-300 hover:underline" target="_blank" rel="noreferrer" href="${escapeHtml(s.youtube_url)}">Open link</a></td>
+      <td class="py-3 px-4 text-neutral-400">${escapeHtml(s.user ? s.user.username : "Deleted user")}</td>
+      <td class="py-3 px-4 text-neutral-400">${escapeHtml((s.created_at || "").slice(0, 10))}</td>
+      <td class="py-3 px-4 text-right">${iconBtn("del-suggestion", s.id, "Remove suggestion", DEL_SVG, "text-red-400")}</td>
+    </tr>`).join("") : `<tr><td colspan="5" class="py-8 text-center text-neutral-500">No music suggestions yet.</td></tr>`;
+  } catch (err) { errBox(err.message); }
 }
 
 /* ============================ ARTISTS ============================ */
@@ -780,8 +833,8 @@ async function onAdminAction(e) {
     else if (a === "del-artist") confirmDel("artist and ALL its albums & songs", () => Admin.deleteArtist(id).then(() => { toast("Artist deleted"); loadArtists(); }));
     else if (a === "add-album") albumForm();
     else if (a === "del-album") confirmDel("album", () => Admin.deleteAlbum(id).then(() => { toast("Album deleted"); loadAlbums(); }));
-    // --- spotify ---
-    else if (a === "sp-import") importFromSpotify(el.dataset.kind, el.dataset.sid, el);
+    else if (a === "del-suggestion") confirmDel("music suggestion", () =>
+      Admin.deleteSuggestion(id).then(() => { toast("Suggestion removed"); showSuggestions(); }));
   } catch (err) { toast(err.message); }
 }
 

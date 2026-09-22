@@ -50,6 +50,7 @@ NEW_COLUMNS = {
         "image_url": "VARCHAR(500) NULL",
     },
     "songs": {
+        "image_url": "VARCHAR(500) NULL",
         "spotify_id": "VARCHAR(40) NULL",
         "spotify_uri": "VARCHAR(80) NULL",
         "explicit": "TINYINT(1) NOT NULL DEFAULT 0",

@@ -18,3 +18,7 @@ Thumbs.db
 # Local-only project material
 DEPLOYMENT.md
 .claude/
+
+# Uploaded licensed music is operational data, not source code
+backend/static/uploads/music/*
+!backend/static/uploads/music/.gitkeep
